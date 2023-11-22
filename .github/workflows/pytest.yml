@@ -1,0 +1,39 @@
+name: pytest
+on:
+  pull_request:
+    branches:
+      - "**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out repository
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Prepare python env
+        run: |
+          python -m venv env
+          source env/bin/activate
+          pip install -U pip
+          pip install -r test-requirements.txt
+      - name: Run unit tests (pytest)
+        run: bash -o pipefail -c 'source
+          env/bin/activate && pip3 install -r requirements.txt &&
+          pytest -vv --cov-report term-missing:skip-covered
+          --cov-report xml:/tmp/coverage.xml --junitxml=/tmp/pytest.xml --cov=alma_tests_cacher
+          tests/ | tee /tmp/pytest-coverage.txt'
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: /tmp/pytest-coverage.txt
+          pytest-xml-coverage-path: /tmp/coverage.xml
+          title: Coverage report for changed files
+          badge-title: Total coverage
+          hide-badge: false
+          hide-report: false
+          report-only-changed-files: true
+          hide-comment: false
+          remove-link-from-badge: false
+          junitxml-path: /tmp/pytest.xml

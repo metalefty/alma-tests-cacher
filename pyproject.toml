@@ -1,0 +1,11 @@
+[tool.isort]
+profile = "black"
+split_on_trailing_comma = true
+
+[tool.black]
+line-length = 79
+skip-string-normalization = true
+preview = true
+
+[tool.pylint]
+max-line-length = 80

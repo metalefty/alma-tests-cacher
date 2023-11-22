@@ -10,9 +10,8 @@ Tool for caching third-party tests for ALTS from git repositories.
 * pydantic >= 2.5.0
 * pydantic-settings >= 2.1.0
 * sentry-sdk >= 1.35.0
-* pytest >= 7.4.3
-* pytest-cov >= 4.1.0
-* anyio >= 4.0.0
+* PyYAML >= 6.0.1
+* plumbum >= 1.8.2
 
 ## Getting started
 
