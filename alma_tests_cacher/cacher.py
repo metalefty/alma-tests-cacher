@@ -2,6 +2,8 @@ import asyncio
 import logging
 import re
 import urllib.parse
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import List, Optional, Union
 
 import aiohttp
@@ -13,6 +15,11 @@ from alma_tests_cacher.constants import (
     DEFAULT_SLEEP_TIMEOUT,
 )
 from alma_tests_cacher.models import PackageTestRepository, TestRepository
+from alma_tests_cacher.utils import (
+    clone_git_repo,
+    git_pull,
+    prepare_gerrit_repo_url,
+)
 
 
 class AlmaTestsCacher:
@@ -23,6 +30,8 @@ class AlmaTestsCacher:
         sleep_timeout: int = DEFAULT_SLEEP_TIMEOUT,
         bs_api_url: str = DEFAULT_BS_API_URL,
         logging_level: str = DEFAULT_LOGGING_LEVEL,
+        common_test_dir_name: str = '',
+        gerrit_username: str = '',
     ):
         self.requests_limit = asyncio.Semaphore(requests_limit)
         self.sleep_timeout = sleep_timeout
@@ -33,6 +42,8 @@ class AlmaTestsCacher:
         self.bs_jwt_token = bs_jwt_token
         self.session_mapping = {}
         self.logger = self.setup_logger(logging_level)
+        self.common_test_dir_name = common_test_dir_name
+        self.gerrit_username = gerrit_username
 
     def setup_logger(self, logging_level: str) -> logging.Logger:
         logger = logging.getLogger('tests-cacher')
@@ -141,50 +152,67 @@ class AlmaTestsCacher:
                     f'/api/v1/test_repositories/{repository_id}/packages/bulk_create/',
                 ),
                 method='post',
-                json=[test_folder.dict() for test_folder in test_folders],
+                json=[
+                    test_folder.model_dump() for test_folder in test_folders
+                ],
                 headers=self.bs_headers,
             )
         except Exception:
             self.logger.exception('Cannot create new test folders:')
 
-    async def get_test_repo_content(self, url: str) -> str:
-        repo_content = ''
-        try:
-            repo_content = await self.make_request(
-                method='get',
-                endpoint=url,
-                return_text=True,
-            )
-        except Exception:
-            self.logger.exception('Cannot get repo content:')
-        return repo_content
-
     async def process_repo(
         self,
-        db_repo: TestRepository,
+        repo: TestRepository,
+        workdir: str,
     ):
         async with self.requests_limit:
             remote_test_folders = []
             new_test_folders = []
-            tests_prefix = db_repo.tests_prefix if db_repo.tests_prefix else ''
-            self.logger.info('Start processing "%s" repo', db_repo.name)
-            repo_content = await self.get_test_repo_content(
-                urllib.parse.urljoin(db_repo.url, db_repo.tests_dir),
-            )
-            for line in repo_content.splitlines():
-                result = re.search(
-                    rf'href="({tests_prefix}.+)"',
-                    line,
+            tests_prefix = repo.tests_prefix if repo.tests_prefix else ''
+            self.logger.info('Start processing "%s" repo', repo.name)
+            repo_dirname = Path(repo.url).name.replace('.git', '')
+            if 'gerrit' in repo.url:
+                repo.url = prepare_gerrit_repo_url(
+                    repo.url,
+                    self.gerrit_username,
                 )
-                if not result:
+            repo_dir = Path(workdir, repo_dirname)
+            if not repo_dir.exists():
+                self.logger.info('Start cloning git repo: %s', repo.url)
+                exit_code, stdout, stderr = clone_git_repo(workdir, repo.url)
+                self.logger.debug(
+                    'Clone result:\nexit_code: %s\nstdout: %s\nstderr: %s',
+                    exit_code,
+                    stdout,
+                    stderr,
+                )
+            else:
+                self.logger.info(
+                    'Pulling the latest changes for git repo: %s',
+                    repo.url,
+                )
+                exit_code, stdout, stderr = git_pull(workdir)
+                self.logger.debug(
+                    'Pull result:\nexit_code: %s\nstdout: %s\nstderr: %s',
+                    exit_code,
+                    stdout,
+                    stderr,
+                )
+            regex_pattern = rf'^{tests_prefix}'
+            if self.common_test_dir_name:
+                regex_pattern = (
+                    rf'^({tests_prefix}|{self.common_test_dir_name})'
+                )
+            for folder in repo_dir.glob(f'{repo.tests_dir}*'):
+                if not re.search(regex_pattern, folder.name):
                     continue
-                remote_test_folders.append(result.groups()[0])
+                remote_test_folders.append(folder.name)
             test_folders_mapping = {
-                test.folder_name: test for test in db_repo.packages
+                test.folder_name: test for test in repo.packages
             }
             for remote_test_folder in remote_test_folders:
-                db_test = test_folders_mapping.get(remote_test_folder)
-                if db_test:
+                existent_test = test_folders_mapping.get(remote_test_folder)
+                if existent_test:
                     continue
                 new_test = PackageTestRepository(
                     folder_name=remote_test_folder,
@@ -194,45 +222,50 @@ class AlmaTestsCacher:
                         remote_test_folder,
                     ),
                     url=urllib.parse.urljoin(
-                        urllib.parse.urljoin(db_repo.url, db_repo.tests_dir),
+                        urllib.parse.urljoin(repo.url, repo.tests_dir),
                         remote_test_folder,
                     ),
                 )
                 new_test_folders.append(new_test)
-                db_repo.packages.append(new_test)
-            await self.bulk_create_test_folders(new_test_folders, db_repo.id)
+                repo.packages.append(new_test)
+            await self.bulk_create_test_folders(new_test_folders, repo.id)
             await self.bulk_remove_test_folders(
                 [
-                    db_test.id
-                    for db_test in db_repo.packages
-                    if db_test.folder_name not in remote_test_folders
-                    and db_test.id
+                    existent_test.id
+                    for existent_test in repo.packages
+                    if existent_test.folder_name not in remote_test_folders
+                    and existent_test.id
                 ],
-                db_repo.id,
+                repo.id,
             )
-            if not remote_test_folders and db_repo.packages:
+            if not remote_test_folders and repo.packages:
                 await self.bulk_remove_test_folders(
-                    [db_test.id for db_test in db_repo.packages if db_test.id],
-                    db_repo.id,
+                    [
+                        existent_test.id
+                        for existent_test in repo.packages
+                        if existent_test.id
+                    ],
+                    repo.id,
                 )
-            self.logger.info('Repo "%s" is processed', db_repo.name)
+            self.logger.info('Repo "%s" is processed', repo.name)
 
     async def run(self, dry_run: bool = False):
-        while True:
-            self.logger.info('Start processing test repositories')
-            try:
-                db_repos = await self.get_test_repositories()
-                await asyncio.gather(
-                    *(self.process_repo(db_repo) for db_repo in db_repos)
+        with TemporaryDirectory(prefix='alma-cacher-') as workdir:
+            while True:
+                self.logger.info('Start processing test repositories')
+                try:
+                    repos = await self.get_test_repositories()
+                    await asyncio.gather(
+                        *(self.process_repo(repo, workdir) for repo in repos)
+                    )
+                except Exception:
+                    self.logger.exception('Cannot process test repositories:')
+                finally:
+                    await self.close_sessions()
+                self.logger.info(
+                    'All repositories are processed, sleeping %d seconds',
+                    self.sleep_timeout,
                 )
-            except Exception:
-                self.logger.exception('Cannot process test repositories:')
-            finally:
-                await self.close_sessions()
-            self.logger.info(
-                'All repositories are processed, sleeping %d seconds',
-                self.sleep_timeout,
-            )
-            await asyncio.sleep(self.sleep_timeout)
-            if dry_run:
-                break
+                await asyncio.sleep(self.sleep_timeout)
+                if dry_run:
+                    break

@@ -4,28 +4,32 @@ Tool for caching third-party tests for ALTS from git repositories.
 
 ## Requirements
 
+* git >= 2.41.0
 * python >= 3.7
 * aiohttp >= 3.8.6
 * pydantic >= 2.5.0
 * pydantic-settings >= 2.1.0
 * sentry-sdk >= 1.35.0
 * pytest >= 7.4.3
+* pytest-cov >= 4.1.0
+* anyio >= 4.0.0
 
 ## Getting started
 
 1. Create a Python Virtual Environment: `python -m venv env`
 2. Activate the Virtual Environment: `source env/bin/activate`
 3. Install dependencies: `pip install -r requirements.txt`
-4. Create a `vars.env` file
-```
-REQUESTS_LIMIT="5"
-SLEEP_TIMEOUT="600"
-BS_API_URL="http://web_server:8000"
-LOGGING_LEVEL="DEBUG"
-BS_JWT_TOKEN=""
-CACHER_SENTRY_ENVIRONMENT="dev"
-CACHER_SENTRY_DSN=""
-CACHER_SENTRY_TRACES_SAMPLE_RATE="0.2"
+4. Create a `vars.yaml` file
+```yaml
+---
+requests_limit: 5
+sleep_timeout: 600
+bs_api_url: http://web_server:8000
+logging_level: DEBUG
+bs_jwt_token:
+cacher_sentry_environment: dev
+cacher_sentry_dsn:
+cacher_sentry_traces_sample_rate: 0.2
 ```
 
 ## Running the AlmaLinux tests cacher
