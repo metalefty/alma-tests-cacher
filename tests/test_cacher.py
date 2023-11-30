@@ -13,7 +13,6 @@ from alma_tests_cacher.utils import get_config
 def default_vars() -> str:
     return """
     sleep_timeout: 0
-    common_test_dir_name: common
     """
 
 
@@ -36,7 +35,6 @@ def cacher(config: Config) -> AlmaTestsCacher:
         sleep_timeout=0,
         bs_api_url=config.bs_api_url,
         bs_jwt_token=config.bs_jwt_token,
-        common_test_dir_name=config.common_test_dir_name,
         gerrit_username=config.gerrit_username,
     )
 
@@ -78,7 +76,6 @@ def test_config(config: Config):
     for assert_expr in (
         isinstance(config, Config),
         config.sleep_timeout == 0,
-        config.common_test_dir_name == 'common',
     ):
         assert assert_expr
 

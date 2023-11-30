@@ -30,7 +30,6 @@ class AlmaTestsCacher:
         sleep_timeout: int = DEFAULT_SLEEP_TIMEOUT,
         bs_api_url: str = DEFAULT_BS_API_URL,
         logging_level: str = DEFAULT_LOGGING_LEVEL,
-        common_test_dir_name: str = '',
         gerrit_username: str = '',
     ):
         self.requests_limit = asyncio.Semaphore(requests_limit)
@@ -42,7 +41,6 @@ class AlmaTestsCacher:
         self.bs_jwt_token = bs_jwt_token
         self.session_mapping = {}
         self.logger = self.setup_logger(logging_level)
-        self.common_test_dir_name = common_test_dir_name
         self.gerrit_username = gerrit_username
 
     def setup_logger(self, logging_level: str) -> logging.Logger:
@@ -199,9 +197,9 @@ class AlmaTestsCacher:
                     stderr,
                 )
             regex_pattern = rf'^{tests_prefix}'
-            if self.common_test_dir_name:
+            if repo.common_test_dir_name:
                 regex_pattern = (
-                    rf'^({tests_prefix}|{self.common_test_dir_name})'
+                    rf'^({tests_prefix}|{repo.common_test_dir_name})'
                 )
             for folder in repo_dir.glob(f'{repo.tests_dir}*'):
                 if not re.search(regex_pattern, folder.name):

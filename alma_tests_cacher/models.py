@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
@@ -19,12 +19,13 @@ class PackageTestRepository(BaseModel):
 
 
 class TestRepository(BaseModel):
-    id: int
+    id: Union[int, str]
     name: str
     url: str
     tests_dir: str
     tests_prefix: Optional[str] = ''
     packages: List[PackageTestRepository]
+    common_test_dir_name: str = ''
 
 
 class Config(BaseSettings):
@@ -33,8 +34,7 @@ class Config(BaseSettings):
     bs_api_url: str = DEFAULT_BS_API_URL
     logging_level: str = DEFAULT_LOGGING_LEVEL
     bs_jwt_token: str = ''
-    cacher_sentry_environment: str = "dev"
-    cacher_sentry_dsn: str = ""
+    cacher_sentry_environment: str = 'dev'
+    cacher_sentry_dsn: str = ''
     cacher_sentry_traces_sample_rate: float = 0.2
-    common_test_dir_name: str = ""
-    gerrit_username: str = ""
+    gerrit_username: str = ''
