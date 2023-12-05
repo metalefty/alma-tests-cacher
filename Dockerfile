@@ -2,6 +2,7 @@ FROM almalinux:9
 
 RUN mkdir -p /code && \
     dnf update -y && \
+    dnf install git -y && \
     dnf clean all
 RUN curl https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -o wait_for_it.sh && chmod +x wait_for_it.sh
 COPY ./requirements.txt /code/requirements.txt
