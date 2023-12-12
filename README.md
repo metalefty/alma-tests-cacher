@@ -1,5 +1,7 @@
 # AlmaLinux tests cacher
 
+![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/maccelf/809b43cccaf8256b03fc0103e245eefc/raw/alma-tests-cacher-badge__main.json)
+
 Tool for caching third-party tests for ALTS from git repositories.
 
 ## Requirements

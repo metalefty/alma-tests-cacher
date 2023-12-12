@@ -23,9 +23,9 @@ class TestRepository(BaseModel):
     name: str
     url: str
     tests_dir: str
-    tests_prefix: Optional[str] = ''
+    tests_prefix: Optional[str] = ""
     packages: List[PackageTestRepository]
-    common_test_dir_name: str = ''
+    common_test_dir_name: str = ""
 
 
 class Config(BaseSettings):
@@ -33,8 +33,8 @@ class Config(BaseSettings):
     sleep_timeout: int = DEFAULT_SLEEP_TIMEOUT
     bs_api_url: str = DEFAULT_BS_API_URL
     logging_level: str = DEFAULT_LOGGING_LEVEL
-    bs_jwt_token: str = ''
-    cacher_sentry_environment: str = 'dev'
-    cacher_sentry_dsn: str = ''
+    bs_jwt_token: str = ""
+    cacher_sentry_environment: str = "dev"
+    cacher_sentry_dsn: str = ""
     cacher_sentry_traces_sample_rate: float = 0.2
-    gerrit_username: str = ''
+    gerrit_username: str = ""

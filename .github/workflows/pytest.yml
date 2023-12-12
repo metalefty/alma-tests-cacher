@@ -3,8 +3,11 @@ on:
   pull_request:
     branches:
       - "**"
+  push:
+    branches:
+      - master
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,6 +38,7 @@ jobs:
       - name: Pytest coverage comment
         if: ${{ steps.changed-files.outputs.all_changed_files }}
         uses: MishaKav/pytest-coverage-comment@main
+        id: coverageComment
         with:
           pytest-coverage-path: /tmp/pytest-coverage.txt
           pytest-xml-coverage-path: /tmp/coverage.xml
@@ -46,3 +50,14 @@ jobs:
           hide-comment: false
           remove-link-from-badge: false
           junitxml-path: /tmp/pytest.xml
+      - name: Create the Badge
+        if: ${{ github.ref == 'refs/heads/master' && steps.coverageComment.outputs.coverage }}
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 809b43cccaf8256b03fc0103e245eefc
+          filename: alma-tests-cacher-badge__main.json
+          label: Coverage Report
+          message: ${{ steps.coverageComment.outputs.coverage }}
+          color: ${{ steps.coverageComment.outputs.color }}
+          namedLogo: python
