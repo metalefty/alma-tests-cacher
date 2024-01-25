@@ -1,0 +1,9 @@
+---
+requests_limit: 5
+sleep_timeout: 600
+albs_api_url: http://web_server:8000
+albs_jwt_token:
+logging_level: DEBUG
+cacher_sentry_environment: dev
+cacher_sentry_dsn:
+cacher_sentry_traces_sample_rate: 0.2
