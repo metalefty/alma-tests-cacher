@@ -25,20 +25,20 @@ from alma_tests_cacher.utils import (
 class AlmaTestsCacher:
     def __init__(
         self,
-        bs_jwt_token: str = '',
+        albs_jwt_token: str = '',
         requests_limit: int = DEFAULT_REQUESTS_LIMIT,
         sleep_timeout: int = DEFAULT_SLEEP_TIMEOUT,
-        bs_api_url: str = DEFAULT_BS_API_URL,
+        albs_api_url: str = DEFAULT_BS_API_URL,
         logging_level: str = DEFAULT_LOGGING_LEVEL,
         gerrit_username: str = '',
     ):
         self.requests_limit = asyncio.Semaphore(requests_limit)
         self.sleep_timeout = sleep_timeout
-        self.bs_api_url = bs_api_url
-        self.bs_headers = {
-            "Authorization": f"Bearer {bs_jwt_token}",
+        self.albs_api_url = albs_api_url
+        self.albs_headers = {
+            "Authorization": f"Bearer {albs_jwt_token}",
         }
-        self.bs_jwt_token = bs_jwt_token
+        self.albs_jwt_token = albs_jwt_token
         self.session_mapping = {}
         self.logger = self.setup_logger(logging_level)
         self.gerrit_username = gerrit_username
@@ -104,10 +104,10 @@ class AlmaTestsCacher:
             response = await self.make_request(
                 method='get',
                 endpoint=urllib.parse.urljoin(
-                    self.bs_api_url,
+                    self.albs_api_url,
                     '/api/v1/test_repositories/',
                 ),
-                headers=self.bs_headers,
+                headers=self.albs_headers,
             )
         except Exception:
             self.logger.exception('Cannot get test repositories:')
@@ -126,11 +126,11 @@ class AlmaTestsCacher:
         try:
             await self.make_request(
                 endpoint=urllib.parse.urljoin(
-                    self.bs_api_url,
+                    self.albs_api_url,
                     f'/api/v1/test_repositories/{repository_id}/packages/bulk_remove/',
                 ),
                 method='post',
-                headers=self.bs_headers,
+                headers=self.albs_headers,
                 json=test_folders_ids,
             )
         except Exception:
@@ -146,14 +146,14 @@ class AlmaTestsCacher:
         try:
             await self.make_request(
                 endpoint=urllib.parse.urljoin(
-                    self.bs_api_url,
+                    self.albs_api_url,
                     f'/api/v1/test_repositories/{repository_id}/packages/bulk_create/',
                 ),
                 method='post',
                 json=[
                     test_folder.model_dump() for test_folder in test_folders
                 ],
-                headers=self.bs_headers,
+                headers=self.albs_headers,
             )
         except Exception:
             self.logger.exception('Cannot create new test folders:')

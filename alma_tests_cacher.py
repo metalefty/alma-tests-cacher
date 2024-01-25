@@ -17,8 +17,8 @@ async def main():
     await AlmaTestsCacher(
         requests_limit=config.requests_limit,
         sleep_timeout=config.sleep_timeout,
-        bs_api_url=config.bs_api_url,
-        bs_jwt_token=config.bs_jwt_token,
+        albs_api_url=config.albs_api_url,
+        albs_jwt_token=config.albs_jwt_token,
         gerrit_username=config.gerrit_username,
     ).run()
 
