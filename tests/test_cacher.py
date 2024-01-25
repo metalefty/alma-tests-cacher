@@ -18,7 +18,7 @@ def default_vars() -> str:
 
 @pytest.fixture
 def config(tmp_path: Path, default_vars: str) -> Config:
-    conf_path = Path(tmp_path, 'vars.yaml')
+    conf_path = Path(tmp_path, 'tests_cacher.yml')
     conf_path.write_text(default_vars)
     return get_config(config_path=conf_path)
 
