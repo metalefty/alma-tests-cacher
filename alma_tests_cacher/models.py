@@ -31,9 +31,9 @@ class TestRepository(BaseModel):
 class Config(BaseSettings):
     requests_limit: int = DEFAULT_REQUESTS_LIMIT
     sleep_timeout: int = DEFAULT_SLEEP_TIMEOUT
-    bs_api_url: str = DEFAULT_BS_API_URL
+    albs_api_url: str = DEFAULT_BS_API_URL
     logging_level: str = DEFAULT_LOGGING_LEVEL
-    bs_jwt_token: str = ""
+    albs_jwt_token: str = ""
     cacher_sentry_environment: str = "dev"
     cacher_sentry_dsn: str = ""
     cacher_sentry_traces_sample_rate: float = 0.2
